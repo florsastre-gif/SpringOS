@@ -1,287 +1,101 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "authorship_tag": "ABX9TyO+qMTv3xOCUbnnfCJ6rpe0",
-      "include_colab_link": true
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
+import streamlit as st
+from google import genai
+import os
+import random
+
+# --- 1. CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="SPRING OS — Direction Engine", page_icon="🧠", layout="wide")
+
+# Estilo visual
+st.markdown("""
+    <style>
+    .main { background-color: #0e1117; color: #ffffff; }
+    div.stButton > button:first-child {
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 10px;
+        height: 3em;
+        width: 100%;
     }
-  },
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "view-in-github",
-        "colab_type": "text"
-      },
-      "source": [
-        "<a href=\"https://colab.research.google.com/github/florsastre-gif/SpringOS/blob/main/Spring_App_py.ipynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 3,
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "nfguRhufq3yk",
-        "outputId": "fb15fcfd-8cfd-465a-ae86-c16f44c7a820"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Collecting streamlit\n",
-            "  Downloading streamlit-1.54.0-py3-none-any.whl.metadata (9.8 kB)\n",
-            "Requirement already satisfied: altair!=5.4.0,!=5.4.1,<7,>=4.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (5.5.0)\n",
-            "Requirement already satisfied: blinker<2,>=1.5.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (1.9.0)\n",
-            "Collecting cachetools<7,>=5.5 (from streamlit)\n",
-            "  Downloading cachetools-6.2.6-py3-none-any.whl.metadata (5.6 kB)\n",
-            "Requirement already satisfied: click<9,>=7.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (8.3.1)\n",
-            "Requirement already satisfied: gitpython!=3.1.19,<4,>=3.0.7 in /usr/local/lib/python3.12/dist-packages (from streamlit) (3.1.46)\n",
-            "Requirement already satisfied: numpy<3,>=1.23 in /usr/local/lib/python3.12/dist-packages (from streamlit) (2.0.2)\n",
-            "Requirement already satisfied: packaging>=20 in /usr/local/lib/python3.12/dist-packages (from streamlit) (26.0)\n",
-            "Requirement already satisfied: pandas<3,>=1.4.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (2.2.2)\n",
-            "Requirement already satisfied: pillow<13,>=7.1.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (11.3.0)\n",
-            "Collecting pydeck<1,>=0.8.0b4 (from streamlit)\n",
-            "  Downloading pydeck-0.9.1-py2.py3-none-any.whl.metadata (4.1 kB)\n",
-            "Requirement already satisfied: protobuf<7,>=3.20 in /usr/local/lib/python3.12/dist-packages (from streamlit) (5.29.6)\n",
-            "Requirement already satisfied: pyarrow>=7.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (18.1.0)\n",
-            "Requirement already satisfied: requests<3,>=2.27 in /usr/local/lib/python3.12/dist-packages (from streamlit) (2.32.4)\n",
-            "Requirement already satisfied: tenacity<10,>=8.1.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (9.1.4)\n",
-            "Requirement already satisfied: toml<2,>=0.10.1 in /usr/local/lib/python3.12/dist-packages (from streamlit) (0.10.2)\n",
-            "Requirement already satisfied: tornado!=6.5.0,<7,>=6.0.3 in /usr/local/lib/python3.12/dist-packages (from streamlit) (6.5.1)\n",
-            "Requirement already satisfied: typing-extensions<5,>=4.10.0 in /usr/local/lib/python3.12/dist-packages (from streamlit) (4.15.0)\n",
-            "Requirement already satisfied: watchdog<7,>=2.1.5 in /usr/local/lib/python3.12/dist-packages (from streamlit) (6.0.0)\n",
-            "Requirement already satisfied: jinja2 in /usr/local/lib/python3.12/dist-packages (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (3.1.6)\n",
-            "Requirement already satisfied: jsonschema>=3.0 in /usr/local/lib/python3.12/dist-packages (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (4.26.0)\n",
-            "Requirement already satisfied: narwhals>=1.14.2 in /usr/local/lib/python3.12/dist-packages (from altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (2.16.0)\n",
-            "Requirement already satisfied: gitdb<5,>=4.0.1 in /usr/local/lib/python3.12/dist-packages (from gitpython!=3.1.19,<4,>=3.0.7->streamlit) (4.0.12)\n",
-            "Requirement already satisfied: python-dateutil>=2.8.2 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=1.4.0->streamlit) (2.9.0.post0)\n",
-            "Requirement already satisfied: pytz>=2020.1 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=1.4.0->streamlit) (2025.2)\n",
-            "Requirement already satisfied: tzdata>=2022.7 in /usr/local/lib/python3.12/dist-packages (from pandas<3,>=1.4.0->streamlit) (2025.3)\n",
-            "Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.12/dist-packages (from requests<3,>=2.27->streamlit) (3.4.4)\n",
-            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.12/dist-packages (from requests<3,>=2.27->streamlit) (3.11)\n",
-            "Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.12/dist-packages (from requests<3,>=2.27->streamlit) (2.5.0)\n",
-            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.12/dist-packages (from requests<3,>=2.27->streamlit) (2026.1.4)\n",
-            "Requirement already satisfied: smmap<6,>=3.0.1 in /usr/local/lib/python3.12/dist-packages (from gitdb<5,>=4.0.1->gitpython!=3.1.19,<4,>=3.0.7->streamlit) (5.0.2)\n",
-            "Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.12/dist-packages (from jinja2->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (3.0.3)\n",
-            "Requirement already satisfied: attrs>=22.2.0 in /usr/local/lib/python3.12/dist-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (25.4.0)\n",
-            "Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /usr/local/lib/python3.12/dist-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (2025.9.1)\n",
-            "Requirement already satisfied: referencing>=0.28.4 in /usr/local/lib/python3.12/dist-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (0.37.0)\n",
-            "Requirement already satisfied: rpds-py>=0.25.0 in /usr/local/lib/python3.12/dist-packages (from jsonschema>=3.0->altair!=5.4.0,!=5.4.1,<7,>=4.0->streamlit) (0.30.0)\n",
-            "Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.12/dist-packages (from python-dateutil>=2.8.2->pandas<3,>=1.4.0->streamlit) (1.17.0)\n",
-            "Downloading streamlit-1.54.0-py3-none-any.whl (9.1 MB)\n",
-            "\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m9.1/9.1 MB\u001b[0m \u001b[31m56.2 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
-            "\u001b[?25hDownloading cachetools-6.2.6-py3-none-any.whl (11 kB)\n",
-            "Downloading pydeck-0.9.1-py2.py3-none-any.whl (6.9 MB)\n",
-            "\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m6.9/6.9 MB\u001b[0m \u001b[31m91.7 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
-            "\u001b[?25hInstalling collected packages: cachetools, pydeck, streamlit\n",
-            "  Attempting uninstall: cachetools\n",
-            "    Found existing installation: cachetools 7.0.1\n",
-            "    Uninstalling cachetools-7.0.1:\n",
-            "      Successfully uninstalled cachetools-7.0.1\n",
-            "Successfully installed cachetools-6.2.6 pydeck-0.9.1 streamlit-1.54.0\n"
-          ]
-        },
-        {
-          "output_type": "stream",
-          "name": "stderr",
-          "text": [
-            "2026-02-21 14:55:48.011 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.013 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.180 \n",
-            "  \u001b[33m\u001b[1mWarning:\u001b[0m to view this Streamlit app on a browser, run it with the following\n",
-            "  command:\n",
-            "\n",
-            "    streamlit run /usr/local/lib/python3.12/dist-packages/colab_kernel_launcher.py [ARGUMENTS]\n",
-            "2026-02-21 14:55:48.180 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.181 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.186 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.186 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.190 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.190 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.192 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.193 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.195 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.197 Session state does not function when running a script without `streamlit run`\n",
-            "2026-02-21 14:55:48.200 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.201 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.202 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.205 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.206 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.207 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.209 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.210 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.213 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.214 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.216 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.216 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.218 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.219 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.220 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.220 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.222 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.223 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.224 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.225 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.226 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.226 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.228 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.229 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.230 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.230 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.232 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.233 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.234 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.235 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.236 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.237 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.238 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.238 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.240 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.240 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.241 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.241 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.242 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.243 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.244 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:55:48.246 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n"
-          ]
-        }
-      ],
-      "source": [
-        "!pip install streamlit\n",
-        "import streamlit as st\n",
-        "from google import genai\n",
-        "import os\n",
-        "\n",
-        "# --- 1. CONFIGURACIÓN DE PÁGINA ---\n",
-        "st.set_page_config(page_title=\"SPRING OS — Direction Engine\", page_icon=\"🧠\", layout=\"wide\")\n",
-        "\n",
-        "# Estilo visual para simular un Sistema Operativo\n",
-        "st.markdown(\"\"\"\n",
-        "    <style>\n",
-        "    .main { background-color: #0e1117; color: #ffffff; }\n",
-        "    div.stButton > button:first-child {\n",
-        "        background-color: #4CAF50;\n",
-        "        color: white;\n",
-        "        border-radius: 10px;\n",
-        "        height: 3em;\n",
-        "        width: 100%;\n",
-        "    }\n",
-        "    </style>\n",
-        "    \"\"\", unsafe_allow_html=True)\n",
-        "\n",
-        "# --- 2. BARRA LATERAL (AUTENTICACIÓN) ---\n",
-        "with st.sidebar:\n",
-        "    st.title(\"🔐 Acceso SPRING\")\n",
-        "    api_key = st.text_input(\"Ingresa tu Google API Key:\", type=\"password\")\n",
-        "    if api_key:\n",
-        "        client = genai.Client(api_key=api_key)\n",
-        "    st.info(\"Este es el motor de instalación estratégica. Sin humo, con rima y razón.\")\n",
-        "\n",
-        "# --- 3. INTERFAZ DE DECISIONES ---\n",
-        "st.title(\"🧠 SPRING OS — Direction Engine™\")\n",
-        "st.markdown(\"### *Donde la IA no improvisa, aquí se instala dirección.*\")\n",
-        "\n",
-        "col1, col2 = st.columns(2)\n",
-        "\n",
-        "with col1:\n",
-        "    movimiento = st.selectbox(\"¿A qué santo le rezamos este mes?\",\n",
-        "                             [\"Venta (Plata en mano)\", \"Autoridad (Que sepan quién sos)\", \"Comunidad (Hacer amigos)\"])\n",
-        "    energia = st.selectbox(\"Energía dominante\",\n",
-        "                          [\"Precisión (Bisturí en mano)\", \"Sofisticación\", \"Cercanía\", \"Ambición\"])\n",
-        "\n",
-        "with col2:\n",
-        "    capacidad = st.select_slider(\"Capacidad real de ejecución\",\n",
-        "                                options=[\"Pantuflas (1-2 piezas)\", \"Zapatillas (3-4 piezas)\", \"Maratón (Diario)\"])\n",
-        "    publico = st.radio(\"Sofisticación del público\", [\"Básico\", \"Intermedio\", \"Técnico\"], horizontal=True)"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "# --- 4. MOTOR DE INSTALACIÓN (SYSTEM PROMPT) ---\n",
-        "SYSTEM_PROMPT = \"\"\"\n",
-        "Eres el alma de SPRING OS. Tu voz es una mezcla entre estratega de élite y esa amiga\n",
-        "que te dice las verdades de frente, con rimas sutiles y refranes letales.\n",
-        "\n",
-        "REGLAS DE ORO:\n",
-        "1. ESTRUCTURA: Devuelve siempre 4 secciones numeradas: 1. [ESTRATEGIA], 2. [IDENTIDAD], 3. [EJECUCIÓN] y 4. [SPRING WHISPER].\n",
-        "2. LENGUAJE: Usa refranes (ej: 'Al pan, pan, y al vino, vino').\n",
-        "3. COHERENCIA: Calcula un 'Coherence Score' (1-100%).\n",
-        "4. WHISPER: Un susurro final corto, letal y estratégico.\n",
-        "\"\"\"\n",
-        "\n",
-        "# --- 5. ACCIÓN ---\n",
-        "if st.button(\"🔌 INSTALAR DIRECCIÓN\"):\n",
-        "    if not api_key:\n",
-        "        st.error(\"Poné la API Key en la barra lateral.\")\n",
-        "    else:\n",
-        "        prompt_usuario = f\"Instalar dirección: Movimiento {movimiento}, Energía {energia}, Capacidad {capacidad}, Público {publico}.\"\n",
-        "\n",
-        "        with st.spinner(\"Acomodando los patitos en fila...\"):\n",
-        "            try:\n",
-        "                response = client.models.generate_content(\n",
-        "                    model='gemini-2.0-flash',\n",
-        "                    contents=[SYSTEM_PROMPT, prompt_usuario]\n",
-        "                )\n",
-        "                st.session_state.resultado = response.text\n",
-        "                st.markdown(\"---\")\n",
-        "                st.markdown(st.session_state.resultado)\n",
-        "                st.balloons()\n",
-        "            except Exception as e:\n",
-        "                st.error(f\"Error técnico: {e}\")\n",
-        "\n",
-        "# --- 6. REALITY CHECK ---\n",
-        "if \"resultado\" in st.session_state:\n",
-        "    st.divider()\n",
-        "    st.subheader(\"🤔 Reality Check: Mirame a los ojos...\")\n",
-        "    check = st.radio(\"¿Estás dispuesta a ejecutar esto?\", [\"Elegir...\", \"Sí\", \"No, bajame un cambio\"])\n",
-        "\n",
-        "    if check == \"No, bajame un cambio\":\n",
-        "        st.warning(\"Recalibrando...\")\n",
-        "        recal_prompt = \"Simplifica la estrategia al 50%. Menos es más.\"\n",
-        "        ajuste = client.models.generate_content(\n",
-        "            model='gemini-2.0-flash',\n",
-        "            contents=[SYSTEM_PROMPT, st.session_state.resultado, recal_prompt]\n",
-        "        )\n",
-        "        st.markdown(ajuste.text)"
-      ],
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "NHmOTRadshoY",
-        "outputId": "dcc03020-071c-49ae-995b-b61f0cf595ee"
-      },
-      "execution_count": 6,
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stderr",
-          "text": [
-            "2026-02-21 14:56:18.413 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:56:18.415 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:56:18.415 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:56:18.416 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:56:18.417 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:56:18.418 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
-            "2026-02-21 14:56:18.419 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n"
-          ]
-        }
-      ]
-    }
-  ]
-}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 2. BIENVENIDA ESTRATÉGICA ---
+refranes_inicio = [
+    "🚀 'Al que madruga, Dios lo ayuda; pero el que tiene estrategia, no se queda en la duda'.",
+    "🧠 'Mucho ruido y pocas nueces'. Vamos a ponerle nueces a esa dirección.",
+    "🛡️ 'Al pan, pan, y al vino, vino'. Acá no instalamos humo, instalamos sistema."
+]
+st.info(random.choice(refranes_inicio))
+
+# --- 3. BARRA LATERAL (AUTENTICACIÓN) ---
+with st.sidebar:
+    st.title("🔐 Acceso SPRING")
+    api_key = st.text_input("Ingresa tu Google API Key:", type="password")
+    if api_key:
+        client = genai.Client(api_key=api_key)
+    st.info("Este es el motor de instalación estratégica. Sin humo, con rima y razón.")
+
+# --- 4. INTERFAZ DE DECISIONES ---
+st.title("🧠 SPRING OS — Direction Engine™")
+st.markdown("### *Donde la IA no improvisa, aquí se instala dirección.*")
+
+col1, col2 = st.columns(2)
+with col1:
+    movimiento = st.selectbox("¿A qué santo le rezamos este mes?", 
+                             ["Venta (Plata en mano)", "Autoridad (Que sepan quién sos)", "Comunidad (Hacer amigos)"])
+    energia = st.selectbox("Energía dominante", 
+                          ["Precisión (Bisturí en mano)", "Sofisticación", "Cercanía", "Ambición"])
+with col2:
+    capacidad = st.select_slider("Capacidad real de ejecución", 
+                                options=["Pantuflas (1-2 piezas)", "Zapatillas (3-4 piezas)", "Maratón (Diario)"])
+    publico = st.radio("Sofisticación del público", ["Básico", "Intermedio", "Técnico"], horizontal=True)
+
+# --- 5. MOTOR DE INSTALACIÓN (SYSTEM PROMPT) ---
+SYSTEM_PROMPT = """
+Eres el alma de SPRING OS. Tu voz es una mezcla entre estratega de élite y esa amiga 
+que te dice las verdades de frente, con rimas sutiles y refranes letales.
+
+REGLAS DE ORO:
+1. ESTRUCTURA: Devuelve siempre 4 secciones numeradas: 1. [ESTRATEGIA], 2. [IDENTIDAD], 3. [EJECUCIÓN] y 4. [SPRING WHISPER].
+2. LENGUAJE: Usa refranes (ej: 'Al pan, pan, y al vino, vino').
+3. COHERENCIA: Calcula un 'Coherence Score' (1-100%).
+4. WHISPER: Un susurro final corto, letal y estratégico.
+"""
+
+# --- 6. ACCIÓN ---
+if st.button("🔌 INSTALAR DIRECCIÓN"):
+    if not api_key:
+        st.error("Poné la API Key en la barra lateral.")
+    else:
+        prompt_usuario = f"Instalar dirección: Movimiento {movimiento}, Energía {energia}, Capacidad {capacidad}, Público {publico}."
+        with st.spinner("Acomodando los patitos en fila..."):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.0-flash',
+                    contents=[SYSTEM_PROMPT, prompt_usuario]
+                )
+                st.session_state.resultado = response.text
+                st.markdown("---")
+                st.markdown(st.session_state.resultado)
+                st.balloons()
+            except Exception as e:
+                st.error(f"Error técnico: {e}")
+
+# --- 7. REALITY CHECK ---
+if "resultado" in st.session_state:
+    st.divider()
+    st.subheader("🤔 Reality Check: Mirame a los ojos...")
+    check = st.radio("¿Estás dispuesta a ejecutar esto?", ["Elegir...", "Sí", "No, bajame un cambio"])
+    
+    if check == "No, bajame un cambio":
+        st.warning("Recalibrando...")
+        recal_prompt = "Simplifica la estrategia al 50%. Menos es más."
+        try:
+            ajuste = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[SYSTEM_PROMPT, st.session_state.resultado, recal_prompt]
+            )
+            st.markdown(ajuste.text)
+        except Exception as e:
+            st.error(f"Error en recalibración: {e}")
